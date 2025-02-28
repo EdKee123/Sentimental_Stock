@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Article to Stock</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chart.js Zoom Plugin CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body>
+  <!-- Header with centered yellow title -->
+  <header>
+    <h1>Article to Stock</h1>
+  </header>
+
+  <!-- Top section: Dropdowns on the right -->
+  <div class="top-container">
+    <div class="dropdowns">
+      <!-- Info Dropdown -->
+      <div class="dropdown">
+        <button class="dropbtn">Info</button>
+        <div class="dropdown-content">
+          <a href="#" id="stockDataButton">Stock Data</a>
+          <a href="#" id="sentimentDataButton">Sentiment Articles</a>
+        </div>
+      </div>
+      <!-- Company's Dropdown with toggle button -->
+      <div class="dropdown">
+        <button class="dropbtn" id="companiesBtn">Company's</button>
+        <div class="dropdown-content" id="companiesDropdown">
+          <!-- Companies will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Display the selected company -->
+  <p>Selected Company: <span id="selectedCompany" data-value="">None</span></p>
+
+  <!-- Graph Section: fixed container for chart -->
+  <div class="graph-container">
+    <canvas id="chartCanvas"></canvas>
+  </div>
+
+  <!-- Reset Zoom Button -->
+  <div class="reset-container">
+    <button id="resetZoomBtn">Reset Zoom</button>
+  </div>
+
+  <!-- Live Section: Icon images on left, oval live button on right -->
+  <div class="live-section">
+    <div class="icons">
+      <img src="icon/triangle-up.png" alt="Up" class="icon" />
+      <img src="icon/equals.png" alt="Equals" class="icon" />
+      <img src="icon/triangle-down.png" alt="Down" class="icon" />
+    </div>
+    <button id="liveBtn" class="live-button">Live</button>
+  </div>
+
+  <!-- Check Section: Button and text area -->
+  <div class="check-section">
+    <button id="checkBtn">Check</button>
+    <textarea id="checkArea" placeholder="Enter your text here..."></textarea>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
