@@ -7,8 +7,10 @@
   <link rel="stylesheet" href="styles.css" />
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Chart.js Zoom Plugin CDN -->
+  <!-- Chart.js Zoom Plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <!-- Chart.js Date Adapter -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 </head>
 <body>
   <!-- Header with centered yellow title -->
@@ -50,13 +52,8 @@
     <button id="resetZoomBtn">Reset Zoom</button>
   </div>
 
-  <!-- Live Section: Icon images on left, oval live button on right -->
+  <!-- Live Section: Only the Live button now -->
   <div class="live-section">
-    <div class="icons">
-      <img src="icon/triangle-up.png" alt="Up" class="icon" />
-      <img src="icon/equals.png" alt="Equals" class="icon" />
-      <img src="icon/triangle-down.png" alt="Down" class="icon" />
-    </div>
     <button id="liveBtn" class="live-button">Live</button>
     <div id="loader" class="loader" style="display: none;"></div>
   </div>
