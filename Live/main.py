@@ -54,7 +54,7 @@ def fetch_final_predictions() -> List[Dict]:
     results = []
     query = """
     SELECT company, newssite, predicted_label, prob_down, prob_same, prob_up
-    FROM public."LiveSentimental"
+    FROM public."FinalPredictions"
     WHERE predicted_label IS NOT NULL;
     """
     with psycopg2.connect(DATABASE_URL) as conn:

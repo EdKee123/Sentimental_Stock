@@ -14,11 +14,10 @@ async function populateCompanies() {
       link.href = "#";
       link.textContent = company;
       link.addEventListener("click", () => {
-        // Set the selected company display and data attribute
+        // Set the selected company display
         const selectedElem = document.getElementById("selectedCompany");
         selectedElem.textContent = company;
         selectedElem.dataset.value = company;
-        // Hide the companies dropdown after selection
         dropdown.style.display = "none";
       });
       dropdown.appendChild(link);
@@ -28,20 +27,22 @@ async function populateCompanies() {
   }
 }
 
-// Toggle companies dropdown visibility
+// Toggle companies dropdown using computed style
 function toggleCompaniesDropdown() {
   const dropdown = document.getElementById("companiesDropdown");
-  if (dropdown.style.display === "block") {
-    dropdown.style.display = "none";
-  } else {
+  const currentDisplay = window.getComputedStyle(dropdown).display;
+  if (currentDisplay === "none") {
     dropdown.style.display = "block";
+  } else {
+    dropdown.style.display = "none";
   }
 }
 
-// Fetch stock data and update chart as a line chart
+// Fetch stock data and update chart
 async function fetchStockData(company) {
   try {
-    const response = await fetch(`http://127.0.0.1:8000/stockdata?company=${encodeURIComponent(company)}`);
+    const url = `http://127.0.0.1:8000/stockdata?company=${encodeURIComponent(company)}`;
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
@@ -57,7 +58,6 @@ function updateChartWithStockData(data, range, xMax) {
   const xLabels = data.map(item => item.timestamp);
   const yValues = data.map(item => item.adj_close);
 
-  // Destroy previous chart if exists
   if (chart) {
     chart.destroy();
     chart = null;
@@ -82,8 +82,8 @@ function updateChartWithStockData(data, range, xMax) {
       scales: {
         x: {
           type: 'linear',
-          min:  1733184001,  // Fixed starting point
-          max: xMax,      // Maximum timestamp from API
+          min: 1733184001,
+          max: xMax,
           title: { display: true, text: 'Timestamp' }
         },
         y: {
@@ -110,7 +110,7 @@ function updateChartWithStockData(data, range, xMax) {
   });
 }
 
-// Fetch sentiment data and update chart as a bar chart
+// Fetch sentiment data and update chart
 async function fetchSentimentData(company) {
   try {
     const url = `http://127.0.0.1:8000/sentimentdata?company=${encodeURIComponent(company)}`;
@@ -172,25 +172,59 @@ function updateChartWithSentimentData(data) {
           }
         },
         zoom: {
-          pan: {
-            enabled: true,
-            mode: 'x',
-            modifierKey: 'shift'
-          },
-          zoom: {
-            wheel: { enabled: true },
-            pinch: { enabled: true },
-            mode: 'x'
-          }
+          pan: { enabled: true, mode: 'x', modifierKey: 'shift' },
+          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
         }
       }
     }
   });
 }
 
-// Set up event listeners once the DOM is loaded
+// Show predictions as popups, one by one
+function showPopupsSequentially(predictions) {
+  let index = 0;
+  function showNext() {
+    if (index >= predictions.length) return;
+    const p = predictions[index];
+    const popup = document.createElement("div");
+    popup.classList.add("prediction-popup");
+
+    // Color based on prediction
+    let bgColor = "yellow";  // default for Same
+    if (p.prediction === "Up") bgColor = "green";
+    else if (p.prediction === "Down") bgColor = "red";
+    popup.style.backgroundColor = bgColor;
+
+    const upPercent = (p.prob_up * 100).toFixed(1);
+    const downPercent = (p.prob_down * 100).toFixed(1);
+    const samePercent = (p.prob_same * 100).toFixed(1);
+
+    popup.innerHTML = `
+      <strong>Company:</strong> ${p.company} <br/>
+      <strong>Newssite:</strong> ${p.newssite} <br/>
+      <strong>Prediction:</strong> ${p.prediction} <br/>
+      (Up=${upPercent}%, Down=${downPercent}%, Same=${samePercent}%)
+    `;
+    popup.style.position = "fixed";
+    popup.style.top = "20px";
+    popup.style.right = "20px";
+    popup.style.padding = "10px 15px";
+    popup.style.color = "#000";
+    popup.style.borderRadius = "5px";
+    popup.style.zIndex = 9999;
+    popup.style.boxShadow = "0 0 8px rgba(0,0,0,0.3)";
+    document.body.appendChild(popup);
+    setTimeout(() => {
+      document.body.removeChild(popup);
+      index++;
+      showNext();
+    }, 3000);
+  }
+  showNext();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize a placeholder chart (optional)
+  // Default sample chart
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chart = new Chart(ctx, {
     type: "line",
@@ -209,29 +243,53 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   });
 
-  // Toggle companies dropdown when clicking the button
+  // Attach event listeners
   document.getElementById("companiesBtn").addEventListener("click", toggleCompaniesDropdown);
 
-  // Live and Check button event listeners
-  document.getElementById("liveBtn").addEventListener("click", () => {
-    alert("Live button clicked!");
+  // Live button: run pipeline, show predictions, and toggle loader
+  document.getElementById("liveBtn").addEventListener("click", async () => {
+    // Show loader (assumes loader element is in HTML)
+    const loader = document.getElementById("loader");
+    loader.style.display = "block";
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/runAll", { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`runAll error: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("runAll response:", data);
+      if (data.status !== "ok") {
+        alert("Pipeline error: " + data.message);
+        return;
+      }
+      const predictions = data.predictions || [];
+      if (predictions.length === 0) {
+        alert("No final predictions found.");
+        return;
+      }
+      showPopupsSequentially(predictions);
+    } catch (err) {
+      console.error("Error in liveBtn handler:", err);
+      alert("Error running pipeline: " + err.message);
+    } finally {
+      // Hide loader when done
+      loader.style.display = "none";
+    }
   });
+
+  // Check button
   document.getElementById("checkBtn").addEventListener("click", () => {
     const userText = document.getElementById("checkArea").value;
     alert("Check button clicked with input: " + userText);
   });
 
-  // Reset Zoom button event listener
+  // Reset Zoom button
   document.getElementById("resetZoomBtn").addEventListener("click", () => {
-    if (chart) {
-      chart.resetZoom();
-    }
+    if (chart) chart.resetZoom();
   });
 
-  // Populate companies dropdown
-  populateCompanies();
-
-  // Stock Data button event listener
+  // Stock Data button
   document.getElementById("stockDataButton").addEventListener("click", () => {
     const selectedCompany = document.getElementById("selectedCompany").dataset.value;
     if (!selectedCompany) {
@@ -241,7 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchStockData(selectedCompany);
   });
 
-  // Sentiment Articles button event listener
+  // Sentiment Articles button
   document.getElementById("sentimentDataButton").addEventListener("click", () => {
     const selectedCompany = document.getElementById("selectedCompany").dataset.value;
     if (!selectedCompany) {
@@ -250,4 +308,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     fetchSentimentData(selectedCompany);
   });
+
+  populateCompanies();
 });
